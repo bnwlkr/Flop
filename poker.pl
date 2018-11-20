@@ -23,7 +23,7 @@ suit(c).
 
 card(Rank, Suit) :- rank(Rank), suit(Suit).
 
-% for card values
+% card values
 value(card(jack, _), 11).
 value(card(queen, _), 12).
 value(card(king, _), 13).
@@ -37,37 +37,54 @@ order(card(R,S), V):- dif(R, ace), value(card(R,S), V).
 deck(A) :- findall((Suit, Rank), card(Suit, Rank), A).
 
 % hands
-hand(flush, card(A,R), card(B,R), card(C,R), card(D,R), card(E,R)) :- A @< B, B @< C, C @< D, D @< E.
+flush(card(A,R), card(B,R), card(C,R), card(D,R), card(E,R)) :- A @< B, B @< C, C @< D, D @< E.
 
-hand(straight, A,B,C,D,E) :- order(A, OA),order(B, OB),order(C, OC),order(D, OD),order(E, OE), OA is OB - 1, OB is OC - 1, OC is OD - 1, OD is OE - 1.
+straight(A,B,C,D,E) :- order(A, OA),order(B, OB),order(C, OC),order(D, OD),order(E, OE), OA is OB - 1, OB is OC - 1, OC is OD - 1, OD is OE - 1.
 
-hand(three, card(A,SX), card(A, SY), card(A, SZ)) :- SX @< SY, SY @< SZ.
+three(card(A,SX), card(A, SY), card(A, SZ)) :- SX @< SY, SY @< SZ.
 
-hand(twopair, A,B,C,D) :- hand(pair,A,B), hand(pair,C,D), A @< C, dif(A,B), dif(A,C), dif(A,D), dif(B,C), dif(B,D).
+twopair(A,B,C,D) :- pair(A,B), pair(C,D), A @< C, dif(A,B), dif(A,C), dif(A,D), dif(B,C), dif(B,D).
 
-hand(pair, card(A,SX), card(A,SY)) :- SX @< SY.
-% TODO: add rest
+pair(card(A,SX), card(A,SY)) :- SX @< SY.
 
-
-
-pairs(CARDS, R) :- findall(hand(pair,A,B), (member(A, CARDS), member(B, CARDS), hand(pair,A,B)), R).
-
-twopairs(CARDS, R) :- findall(hand(twopair,A,B,C,D), (member(A, CARDS), member(B, CARDS), member(C, CARDS), member(D, CARDS), hand(twopair,A,B,C,D)), R).
-
-threes(CARDS, R) :- findall(hand(three,A,B,C), (member(A, CARDS), member(B, CARDS), member(C, CARDS), hand(three,A,B,C)), R).
-
-straights(CARDS, R) :- findall(hand(straight,A,B,C,D,E), (member(A, CARDS), member(B, CARDS), member(C, CARDS), member(D, CARDS), member(E, CARDS), hand(straight,A,B,C,D,E)), R).
-
-flushes(CARDS, R) :- findall(hand(flush,A,B,C,D,E), (member(A, CARDS), member(B, CARDS), member(C, CARDS), member(D, CARDS), member(E, CARDS), hand(flushA,B,C,D,E)), R).
-% TODO: add rest
-
-% all possible hands from CARDS
-hands(CARDS, R) :- pairs(CARDS, PAIRS), twopairs(CARDS, TWOPAIRS), threes(CARDS, THREES), straights(CARDS, STRAIGHTS), flushes(CARDS, FLUSHES), append(PAIRS, TWOPAIRS, ONE), append(ONE, THREES, TWO), append(TWO, FLUSHES, THREE), append(THREE, STRAIGHTS, R).
-% TODO: add rest
+high(card(_,_)).
 
 
+ranking(high(_), 0).
+ranking(pair(_,_), 1).
+ranking(twopair(_,_,_,_), 2).
+ranking(three(_,_,_), 3).
+ranking(straight(_,_,_,_,_), 4).
+ranking(flush(_,_,_,_,_), 5).
 
 
+highs(CARDS, R) :- findall(high(A), (member(A, CARDS), high(A)), R).
+
+pairs(CARDS, R) :- findall(pair(A,B), (member(A, CARDS), member(B, CARDS), pair(A,B)), R).
+
+twopairs(CARDS, R) :- findall(twopair(A,B,C,D), (member(A, CARDS), member(B, CARDS), member(C, CARDS), member(D, CARDS), twopair(A,B,C,D)), R).
+
+threes(CARDS, R) :- findall(three(A,B,C), (member(A, CARDS), member(B, CARDS), member(C, CARDS), three(A,B,C)), R).
+
+straights(CARDS, R) :- findall(straight(A,B,C,D,E), (member(A, CARDS), member(B, CARDS), member(C, CARDS), member(D, CARDS), member(E, CARDS), straight(A,B,C,D,E)), R).
+
+flushes(CARDS, R) :- findall(flush(A,B,C,D,E), (member(A, CARDS), member(B, CARDS), member(C, CARDS), member(D, CARDS), member(E, CARDS), flush(A,B,C,D,E)), R).
 
 
+hands(CARDS, R) :- highs(CARDS, HIGHS), pairs(CARDS, PAIRS), twopairs(CARDS, TWOPAIRS), threes(CARDS, THREES), straights(CARDS, STRAIGHTS), flushes(CARDS, FLUSHES), append(HIGHS, PAIRS, ONE), append(ONE, TWOPAIRS, TWO), append(TWO, THREES, THREE), append(THREE, STRAIGHTS, FOUR), append(FOUR, FLUSHES, R).
+
+% THIS STUFF DOESNT WORK BECAUSE OF THE WAY THAT TIES ARE BROKEN...
+
+%best([C], C).
+%best([H|T], SF) :- ranking(H, RANK), ranking(SF, SFRANK), RANK == SFRANK, beats(H,SF), best(T, H).
+%best([H|T], SF) :- ranking(H, RANK), ranking(SF, SFRANK), RANK == SFRANK, beats(SF,H), best(T, SF).
+%best([H|T], SF) :- ranking(H, RANK), ranking(SF, SFRANK), RANK > SFRANK, best(T, H).
+%best([H|T], SF) :- ranking(H, RANK), ranking(SF, SFRANK), RANK < SFRANK, best(T, SF).
+
+%beats(high(A), high(B)) :- value(A, VA), value(B, VB), VA > VB.
+%beats(pair(A,_), pair(B,_)) :- value(A, VA), value(B, VB), VA > VB.
+%beats(twopair(A,_,C,_), twopair(B,_,D,_)) :- value(A,VA), value(B,VB), value(C,VC), value(D,VD), VA + VC < VB + VD.
+%beats(three(A,_,_), three(B,_,_)) :- value(A, VA), value(B, VB), VA > VB.
+%beats(straight(A,_,_,_,_), straight(B,_,_,_,_)) :- value(A, VA), value(B, VB), VA > VB.
+%beats(straight(A,B,C,D,_), straight(B,_,_,_,_))
 
