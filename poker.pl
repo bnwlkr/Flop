@@ -28,7 +28,8 @@ value(card(jack, _), 11).
 value(card(queen, _), 12).
 value(card(king, _), 13).
 value(card(ace, _), 14).
-value(card(N, _), N) :- number(N), rank(N).
+value(card(N, _), N) :- rank(N), number(N).
+
 
 % for straights
 order(card(ace, _), 1).
@@ -36,55 +37,226 @@ order(card(R,S), V):- dif(R, ace), value(card(R,S), V).
 
 deck(A) :- findall((Suit, Rank), card(Suit, Rank), A).
 
-% hands
-flush(card(A,R), card(B,R), card(C,R), card(D,R), card(E,R)) :- A @< B, B @< C, C @< D, D @< E.
+indexofhelp(E, [E | _], I, I).
+indexofhelp(E, [H | T], I, N) :-
+    dif(E, H),
+    NI is I+1,
+    indexofhelp(E, T, NI, N).
+indexof(E, LIST, N) :-
+    indexofhelp(E, LIST, 0, N).
 
-straight(A,B,C,D,E) :- order(A, OA),order(B, OB),order(C, OC),order(D, OD),order(E, OE), OA is OB - 1, OB is OC - 1, OC is OD - 1, OD is OE - 1.
+maxvalue([H], H).
+maxvalue([H | T], H) :-
+    maxvalue(T, M),
+    value(H, HV),
+    value(M, MV),
+    HV > MV.
+maxvalue([H | T], M)
+    maxvalue(T, M),
+    value(H, HV),
+    value(M, MV),
+    HV < MV.
 
-three(card(A,SX), card(A, SY), card(A, SZ)) :- SX @< SY, SY @< SZ.
+high([card(FV, FS), card(SV, SS)], [card(FV, FS)]) :-
+    value(card(FV, FS), VF),
+    value(card(SV, SS), VS),
+    VF > VS.
+high([card(FV, FS), card(SV, SS)], [card(SV, SS)]) :-
+    value(card(FV, FS), VF),
+    value(card(SV, SS), VS),
+    VS > VF.
 
-twopair(A,B,C,D) :- pair(A,B), pair(C,D), A @< C, dif(A,B), dif(A,C), dif(A,D), dif(B,C), dif(B,D).
+pair(CARDS, [card(V1, S1), card(V2, S2)]) :-
+    length(CARDS, LENGTH),
+    LENGTH < 8,
+    member(card(V1, S1), CARDS),
+    member(card(V2, S2), CARDS),
+    dif(card(V1, S1), card(V2, S2)),
+    indexof(card(V1, S1), CARDS, I1),
+    indexof(card(V2, S2), CARDS, I2),
+    I1 < I2,
+    V1 = V2.
 
-pair(card(A,SX), card(A,SY)) :- SX @< SY.
+twopair(CARDS, [card(V1, S1), card(V2, S2), card(V3, S3), card(V4, S4)]) :-
+    length(CARDS, LENGTH),
+    LENGTH < 8,
+    member(card(V1, S1), CARDS),
+    member(card(V2, S2), CARDS),
+    member(card(V3, S3), CARDS),
+    member(card(V4, S4), CARDS),
+    dif(card(V1, S1), card(V2, S2)),
+    dif(card(V1, S1), card(V3, S3)),
+    dif(card(V1, S1), card(V4, S4)),
+    dif(card(V2, S2), card(V3, S3)),
+    dif(card(V2, S2), card(V4, S4)),
+    dif(card(V3, S3), card(V4, S4)),
+    dif(V1, V3),
+    indexof(card(V1, S1), CARDS, I1),
+    indexof(card(V2, S2), CARDS, I2),
+    indexof(card(V3, S3), CARDS, I3),
+    indexof(card(V4, S4), CARDS, I4),
+    I1 < I2,
+    I1 < I3,
+    I3 < I4,
+    V1 = V2,
+    V3 = V4.
 
-high(card(_,_)).
+three(CARDS, [card(V1, S1), card(V2, S2), card(V3, S3)]) :-
+    length(CARDS, LENGTH),
+    LENGTH < 8,
+    member(card(V1, S1), CARDS),
+    member(card(V2, S2), CARDS),
+    member(card(V3, S3), CARDS),
+    dif(card(V1, S1), card(V2, S2)),
+    dif(card(V1, S1), card(V3, S3)),
+    dif(card(V2, S2), card(V3, S3)),
+    indexof(card(V1, S1), CARDS, I1),
+    indexof(card(V2, S2), CARDS, I2),
+    indexof(card(V3, S3), CARDS, I3),
+    I1 < I2,
+    I2 < I3,
+    V1 = V2,
+    V1 = V3.
 
+straighthelp(_, _, 0, []).
+straighthelp(CARDS, card(E, S1), NUM, BEST) :-
+    NUM > 0,
+    member(card(N, S2), CARDS),
+    value(card(E, S1), EV),
+    NV is EV-1,
+    value(card(N, S2), NV),
+    SUB is NUM-1,
+    straighthelp(CARDS, card(N, S2), SUB, SUBBEST),
+    append([card(N, S2)], SUBBEST, BEST).
 
-ranking(high(_), 0).
-ranking(pair(_,_), 1).
-ranking(twopair(_,_,_,_), 2).
-ranking(three(_,_,_), 3).
-ranking(straight(_,_,_,_,_), 4).
-ranking(flush(_,_,_,_,_), 5).
+straight(CARDS, BEST) :-
+    length(CARDS, LENGTH),
+    LENGTH < 8,
+    straightflushhelp(CARDS, E, 4, SUBBEST),
+    append([E], SUBBEST, BEST),
+    member(E, CARDS).
 
+fullhouse(CARDS, BEST) :-
+    length(CARDS, LENGTH),
+    LENGTH < 8,
+    pair(CARDS, [card(PV, PS) | PT]),
+    three(CARDS, [card(TV, TS) | TT]),
+    dif(PV, TV),
+    append([card(PV, PS) | PT], [card(TV, TS) | TT], BEST).
 
-highs(CARDS, R) :- findall(high(A), (member(A, CARDS), high(A)), R).
+four(CARDS, [card(V1, S1), card(V2, S2), card(V3, S3), card(V4, S4)]) :-
+    length(CARDS, LENGTH),
+    LENGTH < 8,
+    member(card(V1, S1), CARDS),
+    member(card(V2, S2), CARDS),
+    member(card(V3, S3), CARDS),
+    member(card(V4, S4), CARDS),
+    dif(card(V1, S1), card(V2, S2)),
+    dif(card(V1, S1), card(V3, S3)),
+    dif(card(V1, S1), card(V4, S4)),
+    dif(card(V2, S2), card(V3, S3)),
+    dif(card(V2, S2), card(V4, S4)),
+    dif(card(V3, S3), card(V4, S4)),
+    indexof(card(V1, S1), CARDS, I1),
+    indexof(card(V2, S2), CARDS, I2),
+    indexof(card(V3, S3), CARDS, I3),
+    indexof(card(V4, S4), CARDS, I4),
+    I1 < I2,
+    I2 < I3,
+    I3 < I4,
+    V1 = V2,
+    V1 = V3,
+    V1 = V4.
 
-pairs(CARDS, R) :- findall(pair(A,B), (member(A, CARDS), member(B, CARDS), pair(A,B)), R).
+straightflushhelp(_, _, 0, []).
+straightflushhelp(CARDS, card(E, S), NUM, BEST) :-
+    NUM > 0,
+    member(card(N, S), CARDS),
+    value(card(E, S), EV),
+    NV is EV-1,
+    value(card(N, S), NV),
+    SUB is NUM-1,
+    straightflushhelp(CARDS, card(N, S), SUB, SUBBEST),
+    append([card(N, S)], SUBBEST, BEST).
 
-twopairs(CARDS, R) :- findall(twopair(A,B,C,D), (member(A, CARDS), member(B, CARDS), member(C, CARDS), member(D, CARDS), twopair(A,B,C,D)), R).
+straightflush(CARDS, BEST) :-
+    length(CARDS, LENGTH),
+    LENGTH < 8,
+    LENGTH > 4,
+    straightflushhelp(CARDS, E, 4, SUBBEST),
+    append([E], SUBBEST, BEST),
+    member(E, CARDS),
+    maxvalue(E, CARDS).
 
-threes(CARDS, R) :- findall(three(A,B,C), (member(A, CARDS), member(B, CARDS), member(C, CARDS), three(A,B,C)), R).
+royalflush(CARDS, [card(ace, S), card(king, S), card(queen, S), card(jack, S), card(10, S)]) :-
+    length(CARDS, LENGTH),
+    LENGTH < 8,
+    member(card(ace, S), CARDS),
+    member(card(king, S), CARDS),
+    member(card(queen, S), CARDS),
+    member(card(jack, S), CARDS),
+    member(card(10, S), CARDS).
 
-straights(CARDS, R) :- findall(straight(A,B,C,D,E), (member(A, CARDS), member(B, CARDS), member(C, CARDS), member(D, CARDS), member(E, CARDS), straight(A,B,C,D,E)), R).
-
-flushes(CARDS, R) :- findall(flush(A,B,C,D,E), (member(A, CARDS), member(B, CARDS), member(C, CARDS), member(D, CARDS), member(E, CARDS), flush(A,B,C,D,E)), R).
-
-
-hands(CARDS, R) :- highs(CARDS, HIGHS), pairs(CARDS, PAIRS), twopairs(CARDS, TWOPAIRS), threes(CARDS, THREES), straights(CARDS, STRAIGHTS), flushes(CARDS, FLUSHES), append(HIGHS, PAIRS, ONE), append(ONE, TWOPAIRS, TWO), append(TWO, THREES, THREE), append(THREE, STRAIGHTS, FOUR), append(FOUR, FLUSHES, R).
-
-% THIS STUFF DOESNT WORK BECAUSE OF THE WAY THAT TIES ARE BROKEN...
-
-%best([C], C).
-%best([H|T], SF) :- ranking(H, RANK), ranking(SF, SFRANK), RANK == SFRANK, beats(H,SF), best(T, H).
-%best([H|T], SF) :- ranking(H, RANK), ranking(SF, SFRANK), RANK == SFRANK, beats(SF,H), best(T, SF).
-%best([H|T], SF) :- ranking(H, RANK), ranking(SF, SFRANK), RANK > SFRANK, best(T, H).
-%best([H|T], SF) :- ranking(H, RANK), ranking(SF, SFRANK), RANK < SFRANK, best(T, SF).
-
-%beats(high(A), high(B)) :- value(A, VA), value(B, VB), VA > VB.
-%beats(pair(A,_), pair(B,_)) :- value(A, VA), value(B, VB), VA > VB.
-%beats(twopair(A,_,C,_), twopair(B,_,D,_)) :- value(A,VA), value(B,VB), value(C,VC), value(D,VD), VA + VC < VB + VD.
-%beats(three(A,_,_), three(B,_,_)) :- value(A, VA), value(B, VB), VA > VB.
-%beats(straight(A,_,_,_,_), straight(B,_,_,_,_)) :- value(A, VA), value(B, VB), VA > VB.
-%beats(straight(A,B,C,D,_), straight(B,_,_,_,_))
-
+besthand(HAND, COMM, BEST) :-
+    append(HAND, COMM, CARDS),
+    royalflush(CARDS, BEST).
+besthand(HAND, COMM, BEST) :-
+    append(HAND, COMM, CARDS),
+    \+ royalflush(CARDS, _),
+    straightflush(CARDS, BEST).
+besthand(HAND, COMM, BEST) :-
+    append(HAND, COMM, CARDS),
+    \+ royalflush(CARDS, _),
+    \+ straightflush(CARDS, _),
+    four(CARDS, BEST).
+besthand(HAND, COMM, BEST) :-
+    append(HAND, COMM, CARDS),
+    \+ royalflush(CARDS, _),
+    \+ straightflush(CARDS, _),
+    \+ four(CARDS, _),
+    fullhouse(CARDS, BEST).
+besthand(HAND, COMM, BEST) :-
+    append(HAND, COMM, CARDS),
+    \+ royalflush(CARDS, _),
+    \+ straightflush(CARDS, _),
+    \+ four(CARDS, _),
+    \+ fullhouse(CARDS, _),
+    straight(CARDS, BEST).
+besthand(HAND, COMM, BEST) :-
+    append(HAND, COMM, CARDS),
+    \+ royalflush(CARDS, _),
+    \+ straightflush(CARDS, _),
+    \+ four(CARDS, _),
+    \+ fullhouse(CARDS, _),
+    \+ straight(CARDS, _),
+    three(CARDS, BEST).
+besthand(HAND, COMM, BEST) :-
+    append(HAND, COMM, CARDS),
+    \+ royalflush(CARDS, _),
+    \+ straightflush(CARDS, _),
+    \+ four(CARDS, _),
+    \+ fullhouse(CARDS, _),
+    \+ straight(CARDS, _),
+    \+ three(CARDS, _),
+    twopair(CARDS, BEST).
+besthand(HAND, COMM, BEST) :-
+    append(HAND, COMM, CARDS),
+    \+ royalflush(CARDS, _),
+    \+ straightflush(CARDS, _),
+    \+ four(CARDS, _),
+    \+ fullhouse(CARDS, _),
+    \+ straight(CARDS, _),
+    \+ three(CARDS, _),
+    \+ twopair(CARDS, _),
+    pair(CARDS, BEST).
+besthand(HAND, COMM, BEST) :-
+    append(HAND, COMM, CARDS),
+    \+ royalflush(CARDS, _),
+    \+ straightflush(CARDS, _),
+    \+ four(CARDS, _),
+    \+ fullhouse(CARDS, _),
+    \+ straight(CARDS, _),
+    \+ three(CARDS, _),
+    \+ twopair(CARDS, _),
+    \+ pair(CARDS, _),
+    high(HAND, BEST).
