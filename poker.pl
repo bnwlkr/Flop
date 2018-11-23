@@ -5,8 +5,8 @@
 % @< used as arbitrary ordering to remove duplicate answers
 
 % test card set
-testP1([card(ace,d), card(ace,h), card(ace,s)]).
-testP2([card(3,d), card(3,s), card(3,h)]).
+testP1([card(ace,d), card(ace,h), card(5,h)]).
+testP2([card(ace,c), card(ace,s), card(4,h)]).
 
 
 rank(    2).
@@ -39,8 +39,8 @@ value(card(N, _), N) :- number(N), rank(N).
 
 % get max rank from a set of cards
 maxrank([C], R) :- value(C, R).
-maxrank([H|T], RR) :- maxcard(T, RR), value(H, HR), RR >= HR.
-maxrank([H|T], HR) :- maxcard(T, RR), value(H, HR), HR >= RR.
+maxrank([H|T], RR) :- maxrank(T, RR), value(H, HR), RR >= HR.
+maxrank([H|T], HR) :- maxrank(T, RR), value(H, HR), HR >= RR.
 
 % for straights
 order(card(ace, _), 1).
@@ -81,6 +81,13 @@ best([H|T],H) :- ranking(H,HR), ranking(TM, TMR), HR == TMR, best(T, TM), beats(
 % choose random card if neither beats the other
 best([H|T],TM) :- ranking(H,HR), ranking(TM, TMR), HR == TMR, best(T, TM), \+beats(H, TM), \+beats(TM, H).
 
+% same as above but false if no hand is superior (nicer way to do this?).
+bestS([C],C).
+bestS([H|T],TM) :- ranking(H,HR), ranking(TM, TMR), TMR > HR, bestS(T, TM).
+bestS([H|T],H) :- ranking(H,HR), ranking(TM, TMR), TMR < HR, bestS(T, TM).
+bestS([H|T],TM) :- ranking(H,HR), ranking(TM, TMR), HR == TMR, bestS(T, TM), beats(TM, H).
+bestS([H|T],H) :- ranking(H,HR), ranking(TM, TMR), HR == TMR, bestS(T, TM), beats(H, TM).
+
 % determine superiority between similar hands
 beats(high(A), high(B)) :- value(A,VA), value(B,VB), VA > VB.
 beats(pair(A,_), pair(B,_)) :- value(A,VA), value(B,VB), VA > VB.
@@ -89,13 +96,13 @@ beats(twopair(_,_,B1,_), twopair(A2,_,B2,_)) :- value(A2, VA2), value(B1, VB1), 
 beats(three(A,_,_), three(B,_,_)) :- value(A,VA), value(B,VB), VA > VB.
 
 % tiebreak between same hands
-tiebreak(pair(A1,B1), pair(A2,B2), CARDSP1, CARDSP2) :- subtract(CARDSP1, [A1,B1], RP1), subtract(CARDSP2, [A2,B2], RP2), maxcard(RP1, MRP1), maxcard(RP2, MRP2), MRP1 > MRP2.
-tiebreak(twopair(A1,B1,C1,D1), twopair(A2,B2,C2,D2), CARDSP1, CARDSP2) :- subtract(CARDSP1, [A1,B1,C1,D1], RP1), subtract(CARDSP2, [A2,B2,C2,D2], RP2), maxcard(RP1, MRP1), maxcard(RP2, MRP2), MRP1 > MRP2.
+tiebreak(pair(A1,B1), pair(A2,B2), CARDSP1, CARDSP2) :- subtract(CARDSP1, [A1,B1], RP1), subtract(CARDSP2, [A2,B2], RP2), maxrank(RP1, MRP1), maxrank(RP2, MRP2), MRP1 > MRP2.
+tiebreak(twopair(A1,B1,C1,D1), twopair(A2,B2,C2,D2), CARDSP1, CARDSP2) :- subtract(CARDSP1, [A1,B1,C1,D1], RP1), subtract(CARDSP2, [A2,B2,C2,D2], RP2), maxrank(RP1, MRP1), maxrank(RP2, MRP2), MRP1 > MRP2.
 
 % W is 1 if P1 wins, and 2 if P2 wins
-winner(CARDSP1, CARDSP2, 1, ALLHANDS, X) :- hands(CARDSP1, HANDSP1), hands(CARDSP2, HANDSP2), append(HANDSP1, HANDSP2, ALLHANDS), best(ALLHANDS, X), member(X, HANDSP1).
-winner(CARDSP1, CARDSP2, 2, ALLHANDS, X) :- hands(CARDSP1, HANDSP1), hands(CARDSP2, HANDSP2), append(HANDSP1, HANDSP2, ALLHANDS), best(ALLHANDS, X), member(X, HANDSP2).
+winner(CARDSP1, CARDSP2, 1) :- hands(CARDSP1, HANDSP1), hands(CARDSP2, HANDSP2), append(HANDSP1, HANDSP2, ALLHANDS), bestS(ALLHANDS, X), member(X, HANDSP1).
+winner(CARDSP1, CARDSP2, 2) :- hands(CARDSP1, HANDSP1), hands(CARDSP2, HANDSP2), append(HANDSP1, HANDSP2, ALLHANDS), bestS(ALLHANDS, X), member(X, HANDSP2).
 % neither have a winning hand, go to tiebreak
-%winner(CARDSP1, CARDSP2, 1) :- hands(CARDSP1, HANDSP1), hands(CARDSP2, HANDSP2), best(HANDSP1, BESTP1), best(HANDSP2, BESTP2), tiebreak(BESTP1, BESTP2, CARDSP1, CARDSP2).
-%winner(CARDSP1, CARDSP2, 2) :- hands(CARDSP1, HANDSP1), hands(CARDSP2, HANDSP2), best(HANDSP1, BESTP1), best(HANDSP2, BESTP2), tiebreak(BESTP2, BESTP1, CARDSP2, CARDSP1).
+winner(CARDSP1, CARDSP2, 1) :- hands(CARDSP1, HANDSP1), hands(CARDSP2, HANDSP2), best(HANDSP1, BESTP1), best(HANDSP2, BESTP2), tiebreak(BESTP1, BESTP2, CARDSP1, CARDSP2).
+winner(CARDSP1, CARDSP2, 2) :- hands(CARDSP1, HANDSP1), hands(CARDSP2, HANDSP2), best(HANDSP1, BESTP1), best(HANDSP2, BESTP2), tiebreak(BESTP2, BESTP1, CARDSP2, CARDSP1).
 % there could be no winner (split pot).
