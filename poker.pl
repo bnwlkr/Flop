@@ -42,16 +42,15 @@ maxrank([H|T], R) :- maxrank(T, R), value(H, HR), value(R, RR), HR = RR, suitval
 maxrank([H|T], H) :- maxrank(T, R), value(H, HR), value(R, RR), HR = RR, suitvalue(H, HS), suitvalue(R, RS), HS > RS.
 
 % for straights
-order(card(ace, _), 1).
-order(card(R,S), V):- dif(R, ace), value(card(R,S), V).
+order(X, V):- value(card(X,_), V).
 
 % hands
 royalflush(card(ace, S), card(king, S), card(queen, S), card(jack, S), card(10, S)).
 straightflush(card(A,S),card(B,S),card(C,S),card(D,S),card(E,S)) :- order(A, OA),order(B, OB),order(C, OC),order(D, OD),order(E, OE), OA is OB-1, OB is OC-1, OC is OD-1, OD is OE-1.
 four(card(A,SW), card(A,SX), card(A,SY), card(A,SZ)) :- SW @< SX, SX @< SY, SY @< SZ.
 fullhouse(card(A,AS1), card(A,AS2), card(A,AS3), card(B,BS1), card(B,BS2)) :- AS1 @< AS2, AS2 @< AS3, BS1 @< BS2, dif(A,B).
-flush(card(A,S), card(B,S), card(C,S), card(D,S), card(E,S)) :- A @< B, B @< C, C @< D, D @< E.
-straight(A,B,C,D,E) :- order(A, OA),order(B, OB),order(C, OC),order(D, OD),order(E, OE), OA is OB-1, OB is OC-1, OC is OD-1, OD is OE-1, \+ straightflush(A,B,C,D,E).
+flush(card(A,S), card(B,S), card(C,S), card(D,S), card(E,S)) :- order(A, AV),order(B, BV),order(C, CV),order(D, DV),order(E, EV), AV @< BV, BV @< CV, CV @< DV, DV @< EV.
+straight(A,B,C,D,E) :- value(A, OA),value(B, OB),value(C, OC),value(D, OD),value(E, OE), OA is OB-1, OB is OC-1, OC is OD-1, OD is OE-1, \+ straightflush(A,B,C,D,E).
 three(card(A,SX), card(A, SY), card(A, SZ)) :- SX @< SY, SY @< SZ.
 twopair(A,B,C,D) :- pair(A,B), pair(C,D), A @< C.
 pair(card(A,SX), card(A,SY)) :- SX @< SY.
