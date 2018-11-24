@@ -1,14 +1,5 @@
 :- use_module(library(lists)).
 
-% to set the current games pocket: asserta(pocket(card_,_), card(_,_)).
-% to set the table: retract + assert(table([card(_,_),...]))
-% @< used as arbitrary ordering to remove duplicate answers
-
-% test card set
-testP1([card(ace,d), card(ace,h), card(5,h)]).
-testP2([card(ace,c), card(ace,s), card(4,h)]).
-
-
 rank(    2).
 rank(    3).
 rank(    4).
@@ -50,11 +41,6 @@ maxrank([H|T], H) :- maxrank(T, R), value(H, HR), value(R, RR), HR > RR.
 maxrank([H|T], R) :- maxrank(T, R), value(H, HR), value(R, RR), HR = RR, suitvalue(H, HS), suitvalue(R, RS), RS > HS.
 maxrank([H|T], H) :- maxrank(T, R), value(H, HR), value(R, RR), HR = RR, suitvalue(H, HS), suitvalue(R, RS), HS > RS.
 
-% remove get card with the given rank
-removecardwithrank([], _, 0, []).
-removecardwithrank([card(V, _)|T], V, N, R) :- removecardwithrank(T, V, NSUB, R), N is NSUB+1.
-removecardwithrank([H|T], V, N, [H|R]) :- value(H, HV), dif(HV, V), removecardwithrank(T, V, R).
-
 % for straights
 order(card(ace, _), 1).
 order(card(R,S), V):- dif(R, ace), value(card(R,S), V).
@@ -63,7 +49,7 @@ order(card(R,S), V):- dif(R, ace), value(card(R,S), V).
 royalflush(card(ace, S), card(king, S), card(queen, S), card(jack, S), card(10, S)).
 straightflush(card(A,S),card(B,S),card(C,S),card(D,S),card(E,S)) :- order(A, OA),order(B, OB),order(C, OC),order(D, OD),order(E, OE), OA is OB-1, OB is OC-1, OC is OD-1, OD is OE-1.
 four(card(A,SW), card(A,SX), card(A,SY), card(A,SZ)) :- SW @< SX, SX @< SY, SY @< SZ.
-fullhouse(card(A,AS1), card(A,AS2), card(A,AS3), card(B,BS1), card(B,BS2)) :- AS1 @< AS2, AS2 @< AS3, BS1 @< BS2.
+fullhouse(card(A,AS1), card(A,AS2), card(A,AS3), card(B,BS1), card(B,BS2)) :- AS1 @< AS2, AS2 @< AS3, BS1 @< BS2, dif(A,B).
 flush(card(A,S), card(B,S), card(C,S), card(D,S), card(E,S)) :- A @< B, B @< C, C @< D, D @< E.
 straight(A,B,C,D,E) :- order(A, OA),order(B, OB),order(C, OC),order(D, OD),order(E, OE), OA is OB-1, OB is OC-1, OC is OD-1, OD is OE-1, \+ straightflush(A,B,C,D,E).
 three(card(A,SX), card(A, SY), card(A, SZ)) :- SX @< SY, SY @< SZ.
