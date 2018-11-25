@@ -1,4 +1,4 @@
-:- include('poker').
+:- include('probability').
 
 starthand(NUMPLAYERS) :-
     write("Hi! I can help you determine the best move given your hand.\n"),
