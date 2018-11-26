@@ -41,6 +41,8 @@ maxrank([H|T], H) :- maxrank(T, R), value(H, HR), value(R, RR), HR > RR.
 maxrank([H|T], R) :- maxrank(T, R), value(H, HR), value(R, RR), HR = RR, suitvalue(H, HS), suitvalue(R, RS), RS > HS.
 maxrank([H|T], H) :- maxrank(T, R), value(H, HR), value(R, RR), HR = RR, suitvalue(H, HS), suitvalue(R, RS), HS > RS.
 
+greater(card(V1, S1), card(V2, S2)) :- order(V1, OV1), order(V2, OV2), (OV1 > OV2); (OV1 = OV2, suitvalue(S1, SV1), suitvalue(S2, SV2), SV1 > SV2).
+
 % for straights
 order(X, V):- value(card(X,_), V).
 
