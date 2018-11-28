@@ -41,7 +41,7 @@ maxrank([H|T], H) :- maxrank(T, R), value(H, HR), value(R, RR), HR > RR.
 maxrank([H|T], R) :- maxrank(T, R), value(H, HR), value(R, RR), HR = RR, suitvalue(H, HS), suitvalue(R, RS), RS > HS.
 maxrank([H|T], H) :- maxrank(T, R), value(H, HR), value(R, RR), HR = RR, suitvalue(H, HS), suitvalue(R, RS), HS > RS.
 
-greater(card(V1, S1), card(V2, S2)) :- order(V1, OV1), order(V2, OV2), (OV1 > OV2); (OV1 = OV2, suitvalue(S1, SV1), suitvalue(S2, SV2), SV1 > SV2).
+greater(card(V1, S1), card(V2, S2)) :- order(V1, OV1), order(V2, OV2), ((OV1 > OV2); (OV1 = OV2, suitvalue(S1, SV1), suitvalue(S2, SV2), SV1 > SV2)).
 
 % for straights
 order(X, V):- value(card(X,_), V).
@@ -60,15 +60,15 @@ high(card(_,_)).
 
 % hand ranks
 ranking(high(A), [R]) :- value(A, R).
-ranking(pair(A,B), [R]) :- value(A, V), R is 100+V.
-ranking(twopair(A,B,C,D), [R1, R2]) :- value(C, V1), R1 is 200+V1, value(A, V2), R2 is 200+V2.
-ranking(three(A,B,C), [R]) :- value(A, V), R is 300+V.
-ranking(straight(A,B,C,D,E), [R]) :- value(E, V), R is 400+V.
+ranking(pair(A,_), [R]) :- value(A, V), R is 100+V.
+ranking(twopair(A,_,C,_), [R1, R2]) :- value(C, V1), R1 is 200+V1, value(A, V2), R2 is 200+V2.
+ranking(three(A,_,_), [R]) :- value(A, V), R is 300+V.
+ranking(straight(_,_,_,_,E), [R]) :- value(E, V), R is 400+V.
 ranking(flush(A,B,C,D,E), [R1, R2, R3, R4, R5]) :- value(E, V1), R1 is 500+V1, value(D, V2), R2 is 500+V2, value(C, V3), R3 is 500+V3, value(B, V4), R4 is 500+V4, value(A, V5), R5 is 500+V5.
-ranking(fullhouse(A,B,C,D,E), [R1, R2]) :- value(A, V1), R1 is 600+V1, value(D, V2), R2 is 600+V2.
-ranking(four(A,B,C,D), [R]) :- value(A, V), R is 700+V.
-ranking(straightflush(A,B,C,D,E), [R]) :- value(E, V), R is 800+V.
-ranking(royalflush(A,B,C,D,E), [900]).
+ranking(fullhouse(A,_,_,D,_), [R1, R2]) :- value(A, V1), R1 is 600+V1, value(D, V2), R2 is 600+V2.
+ranking(four(A,_,_,_), [R]) :- value(A, V), R is 700+V.
+ranking(straightflush(_,_,_,_,E), [R]) :- value(E, V), R is 800+V.
+ranking(royalflush(_,_,_,_,_), [900]).
 
 % gets all hands of specific types
 highs(CARDS, R) :- findall(high(A), (member(A, CARDS), high(A)), R).
@@ -86,7 +86,7 @@ royalflushes(CARDS, R) :- findall(royalflush(A,B,C,D,E), (member(A, CARDS), memb
 hands(CARDS, R) :- highs(CARDS, HIGHS), pairs(CARDS, PAIRS), twopairs(CARDS, TWOPAIRS), threes(CARDS, THREES), straights(CARDS, STRAIGHTS), flushes(CARDS, FLUSHES), fullhouses(CARDS, FULLHOUSES), fours(CARDS, FOURS), straightflushes(CARDS, STRAIGHTFLUSHES), royalflushes(CARDS, ROYALFLUSHES), append([HIGHS, PAIRS, TWOPAIRS, THREES, STRAIGHTS, FLUSHES, FULLHOUSES, FOURS, STRAIGHTFLUSHES, ROYALFLUSHES], R).
 
 % determine whether one ranking is better than another
-beats([A|TA], [B|TB]) :- A > B.
+beats([A|_], [B|_]) :- A > B.
 beats([A|TA], [B|TB]) :- A = B, beats(TA, TB).
 
 % determine whether one hand is better than another
