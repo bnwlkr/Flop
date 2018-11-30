@@ -1,6 +1,6 @@
 :- include('probability').
 
-starthand(NUMPLAYERS) :-
+starthand :-
     write("Hi! I can help you determine the best move given your hand.\n"),
     write("First, what cards were you dealt? (input like this: jack of diamonds and 7 of spades)\n"),
     readln(L1),
@@ -8,14 +8,14 @@ starthand(NUMPLAYERS) :-
     write("Now, what cards are on the table?\n"),
     readln(L2),
     parseinput(L2, COMM),
-    chancetowin(HAND, COMM, NUMPLAYERS).
+    chancetowin(HAND, COMM).
 
 parseinput(WORDS, CARDS) :-
     subtract(WORDS, [of,and], CARDWORDS),
     getcardsfromwords(CARDWORDS, CARDS).
 
 getcardsfromwords([], []).
-getcardsfromwords([F], _) :- write("Invalid input.\n"), false.
+getcardsfromwords([_], _) :- write("Invalid input.\n"), false.
 getcardsfromwords([F,S|T], [card(F, SV)|R]) :- getsuitfromword(S, SV), getcardsfromwords(T, R).
 
 getsuitfromword(KEY, VALUE) :- getvalue(KEY, VALUE, [diamonds, hearts, spades, clubs], [d, h, s, c]).
