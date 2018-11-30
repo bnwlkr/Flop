@@ -29,10 +29,10 @@ value(card(ace, _), 14).
 value(card(N, _), N) :- rank(N), number(N).
 
 % suit values
-suitvalue(card(_, d), 3).
-suitvalue(card(_, h), 2).
-suitvalue(card(_, s), 1).
-suitvalue(card(_, c), 0).
+suitvalue(d, 3).
+suitvalue(h, 2).
+suitvalue(s, 1).
+suitvalue(c, 0).
 
 % get max rank from a set of cards
 maxrank([C], C).
@@ -68,21 +68,26 @@ ranking(four(A,_,_,_), [R]) :- value(A, V), R is 700+V.
 ranking(straightflush(_,_,_,_,E), [R]) :- value(E, V), R is 800+V.
 ranking(royalflush(_,_,_,_,_), [900]).
 
+% get the n highest cards of a set
+highestcards(_, 0, []) :- !.
+highestcards(CARDS, N, [E|R]) :- maxrank(CARDS, E), SUBN is N-1, select(E, CARDS, NCARDS),
+    highestcards(NCARDS, SUBN, R).
+
 % gets all hands of specific types
 highs(CARDS, high(R)) :-
     maxrank(CARDS, R).
 
 pairs(CARDS, R) :-
     maxrank(CARDS, M), select(M, CARDS, NCARDS),
-    ((value(M, V), member(card(V, S), NCARDS), R = pair(V, card(M, S))); !;
+    ((value(M, V), value(A, V), member(A, NCARDS), R = pair(M, A), !);
     pairs(NCARDS, R)).
 
 twopairs(CARDS, twopair(NC1, NC2, C1, C2)) :-
-    pairs(CARDS, pair(C1, C2)), subtract(CARDS, [C1, C2], NCARDS), pairs(NCARDS, NC1, NC2).
+    pairs(CARDS, pair(C1, C2)), subtract(CARDS, [C1, C2], NCARDS), pairs(NCARDS, pair(NC1, NC2)).
 
 threes(CARDS, R) :-
     maxrank(CARDS, M), select(M, CARDS, NCARDS),
-    ((value(M, V), member(card(V, S1), NCARDS), member(card(V, S2), NCARDS), dif(S1, S2), R = three(M, card(V, S1), card(V, S2))); !;
+    ((value(M, V), value(A, V), value(B, V), dif(A, B), member(A, NCARDS), member(B, NCARDS), R = three(M, A, B), !);
     threes(NCARDS, R)).
 
 straights(CARDS, R) :-
@@ -95,7 +100,7 @@ straights(CARDS, R) :-
 
 flushes(CARDS, R) :-
     maxrank(CARDS, card(V, S)), select(card(V, S), CARDS, NCARDS), findall(card(X, S), (member(card(X, S), NCARDS)), SUITED), length(SUITED, L),
-    ((L > 3); !;
+    ((L > 3, highestcards(SUITED, 4, [A, B, C, D]), R = flush(D, C, B, A, card(V, S)), !);
     (L < 4, flushes(NCARDS, R))).
 
 fullhouses(CARDS, R) :-
@@ -104,8 +109,8 @@ fullhouses(CARDS, R) :-
 
 fours(CARDS, R) :-
     maxrank(CARDS, M), select(M, CARDS, NCARDS),
-    ((value(M, V), subset([card(V, S1), card(V, S2), card(V, S3)], NCARDS),
-        dif(S1, S2), dif(S2, S3), dif(S3, S1), R = four(M, card(V, S1), card(V, S2), card(V, S3))); !;
+    ((value(M, V), value(A, V), value(B, V), value(C, V), dif(A, B), dif(A, C), dif(B, C),
+        subset([A, B, C], NCARDS), R = four(M, A, B, C), !);
     fours(NCARDS, R)).
 
 straightflushes(CARDS, R) :-

@@ -68,13 +68,13 @@ test('winner - pair vs worse pair by kicker', [nondet]) :- pair_hand1(CARDS1), p
 test('winner - pair vs worse pair by kicker', [nondet]) :- pair_hand1(CARDS1), pair_hand4(CARDS2), winner(CARDS1, CARDS2, p1).
 test('winner - pair vs worse pair by kicker', [nondet]) :- pair_hand1(CARDS1), pair_hand5(CARDS2), winner(CARDS1, CARDS2, p1).
 
-test('besthand - twopair', [nondet])                                      :- twopair_hand1(CARDS), besthand(CARDS, twopair(card(10,c), card(10,h), card(queen,d), card(queen,h))).
+test('besthand - twopair', [nondet])                                      :- twopair_hand1(CARDS), besthand(CARDS, twopair(card(10,h), card(10,c), card(queen,d), card(queen,h))).
 test('winner - twopair vs worse hand', [nondet])                          :- twopair_hand1(CARDS1), pair_hand1(CARDS2), winner(CARDS1, CARDS2, p1).
 test('winner - twopair vs worse twopair by value of high pair', [nondet]) :- twopair_hand1(CARDS1), twopair_hand3(CARDS2), winner(CARDS1, CARDS2, p1).
 test('winner - twopair vs worse twopair by value of low pair', [nondet])  :- twopair_hand1(CARDS1), twopair_hand2(CARDS2), winner(CARDS1, CARDS2, p1).
 test('winner - twopair vs worse twopair by kicker', [nondet])             :- twopair_hand1(CARDS1), twopair_hand4(CARDS2), winner(CARDS1, CARDS2, p1).
 
-test('besthand - three', [nondet])                        :- three_hand1(CARDS), besthand(CARDS, three(card(10,c), card(10,d), card(10,h))).
+test('besthand - three', [nondet])                        :- three_hand1(CARDS), besthand(CARDS, three(card(10,d), card(10,h), card(10,c))).
 test('winner - three vs worse hand', [nondet])            :- three_hand1(CARDS1), twopair_hand1(CARDS2), winner(CARDS1, CARDS2, p1).
 test('winner - three vs worse three by value', [nondet])  :- three_hand1(CARDS1), three_hand2(CARDS2), winner(CARDS1, CARDS2, p1).
 test('winner - three vs worse three by kicker', [nondet]) :- three_hand1(CARDS1), three_hand3(CARDS2), winner(CARDS1, CARDS2, p1).
@@ -95,7 +95,7 @@ test('winner - fullhouse vs better fullhouse by pair', [nondet])  :- fullhouse_h
 test('winner - fullhouse vs better fullhouse by three', [nondet]) :- fullhouse_hand3(CARDS1), fullhouse_hand1(CARDS2), winner(CARDS1, CARDS2, p2).
 test('winner - fullhouse vs equal fullhouse split', [nondet])     :- fullhouse_hand4(CARDS1), fullhouse_hand1(CARDS2), winner(CARDS1, CARDS2, split).
 
-test('besthand - four', [nondet])                       :- four_hand1(CARDS), besthand(CARDS, four(card(ace,c), card(ace,d), card(ace,h), card(ace,s))).
+test('besthand - four', [nondet])                       :- four_hand1(CARDS), besthand(CARDS, four(card(ace,d), card(ace,h), card(ace,c), card(ace,s))).
 test('winner - four vs worse hand', [nondet])           :- four_hand1(CARDS1), fullhouse_hand1(CARDS2), winner(CARDS1, CARDS2, p1).
 test('winner - four vs worse four by value', [nondet])  :- four_hand1(CARDS1), four_hand2(CARDS2), winner(CARDS1, CARDS2, p1).
 test('winner - four vs worse four by kicker', [nondet]) :- four_hand1(CARDS1), four_hand3(CARDS2), winner(CARDS1, CARDS2, p1).
