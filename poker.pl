@@ -36,10 +36,8 @@ suitvalue(card(_, c), 0).
 
 % get max rank from a set of cards
 maxrank([C], C).
-maxrank([H|T], R) :- maxrank(T, R), value(H, HR), value(R, RR), RR > HR.
-maxrank([H|T], H) :- maxrank(T, R), value(H, HR), value(R, RR), HR > RR.
-maxrank([H|T], R) :- maxrank(T, R), value(H, HR), value(R, RR), HR = RR, suitvalue(H, HS), suitvalue(R, RS), RS > HS.
-maxrank([H|T], H) :- maxrank(T, R), value(H, HR), value(R, RR), HR = RR, suitvalue(H, HS), suitvalue(R, RS), HS > RS.
+maxrank([H|T], R) :- maxrank(T, R), greater(R, H).
+maxrank([H|T], H) :- maxrank(T, R), greater(H, R).
 
 greater(card(V1, S1), card(V2, S2)) :- order(V1, OV1), order(V2, OV2), ((OV1 > OV2); (OV1 = OV2, suitvalue(S1, SV1), suitvalue(S2, SV2), SV1 > SV2)).
 
@@ -71,19 +69,65 @@ ranking(straightflush(_,_,_,_,E), [R]) :- value(E, V), R is 800+V.
 ranking(royalflush(_,_,_,_,_), [900]).
 
 % gets all hands of specific types
-highs(CARDS, R) :- findall(high(A), (member(A, CARDS), high(A)), R).
-pairs(CARDS, R) :- findall(pair(A,B), (member(A, CARDS), member(B, CARDS), pair(A,B)), R).
-twopairs(CARDS, R) :- findall(twopair(A,B,C,D), (member(A, CARDS), member(B, CARDS), member(C, CARDS), member(D, CARDS), twopair(A,B,C,D)), R).
-threes(CARDS, R) :- findall(three(A,B,C), (member(A, CARDS), member(B, CARDS), member(C, CARDS), three(A,B,C)), R).
-straights(CARDS, R) :- findall(straight(A,B,C,D,E), (member(A, CARDS), member(B, CARDS), member(C, CARDS), member(D, CARDS), member(E, CARDS), straight(A,B,C,D,E)), R).
-flushes(CARDS, R) :- findall(flush(A,B,C,D,E), (member(A, CARDS), member(B, CARDS), member(C, CARDS), member(D, CARDS), member(E, CARDS), flush(A,B,C,D,E)), R).
-fullhouses(CARDS, R) :- findall(fullhouse(A,B,C,D,E), (member(A, CARDS), member(B, CARDS), member(C, CARDS), member(D, CARDS), member(E, CARDS), fullhouse(A,B,C,D,E)), R).
-fours(CARDS, R) :- findall(four(A,B,C,D), (member(A, CARDS), member(B, CARDS), member(C, CARDS), member(D, CARDS), four(A,B,C,D)), R).
-straightflushes(CARDS, R) :- findall(straightflush(A,B,C,D,E), (member(A, CARDS), member(B, CARDS), member(C, CARDS), member(D, CARDS), member(E, CARDS), straightflush(A,B,C,D,E)), R).
-royalflushes(CARDS, R) :- findall(royalflush(A,B,C,D,E), (member(A, CARDS), member(B, CARDS), member(C, CARDS), member(D, CARDS), member(E, CARDS), royalflush(A,B,C,D,E)), R).
+highs(CARDS, high(R)) :-
+    maxrank(CARDS, R).
+
+pairs(CARDS, R) :-
+    maxrank(CARDS, M), select(M, CARDS, NCARDS),
+    ((value(M, V), member(card(V, S), NCARDS), R = pair(V, card(M, S))); !;
+    pairs(NCARDS, R)).
+
+twopairs(CARDS, twopair(NC1, NC2, C1, C2)) :-
+    pairs(CARDS, pair(C1, C2)), subtract(CARDS, [C1, C2], NCARDS), pairs(NCARDS, NC1, NC2).
+
+threes(CARDS, R) :-
+    maxrank(CARDS, M), select(M, CARDS, NCARDS),
+    ((value(M, V), member(card(V, S1), NCARDS), member(card(V, S2), NCARDS), dif(S1, S2), R = three(M, card(V, S1), card(V, S2))); !;
+    threes(NCARDS, R)).
+
+straights(CARDS, R) :-
+    maxrank(CARDS, M), value(M, V1),
+    ((V2 is V1-1, V3 is V2-1, V4 is V3-1, V5 is V4-1,
+        value(card(R2, _), V2), value(card(R3, _), V3), value(card(R4, _), V4), value(card(R5, _), V5),
+        subset([card(R2, S2), card(R3, S3), card(R4, S4), card(R5, S5)], CARDS),
+        R = straight(card(R5, S5), card(R4, S4), card(R3, S3), card(R2, S2), M));
+    (select(M, CARDS, NCARDS), straights(NCARDS, R))).
+
+flushes(CARDS, R) :-
+    maxrank(CARDS, card(V, S)), select(card(V, S), CARDS, NCARDS), findall(card(X, S), (member(card(X, S), NCARDS)), SUITED), length(SUITED, L),
+    ((L > 3); !;
+    (L < 4, flushes(NCARDS, R))).
+
+fullhouses(CARDS, R) :-
+    threes(CARDS, three(C1, C2, C3)), subtract(CARDS, [C1, C2, C3], NCARDS),
+    pairs(NCARDS, pair(C4, C5)), R = fullhouse(C1, C2, C3, C4, C5).
+
+fours(CARDS, R) :-
+    maxrank(CARDS, M), select(M, CARDS, NCARDS),
+    ((value(M, V), subset([card(V, S1), card(V, S2), card(V, S3)], NCARDS),
+        dif(S1, S2), dif(S2, S3), dif(S3, S1), R = four(M, card(V, S1), card(V, S2), card(V, S3))); !;
+    fours(NCARDS, R)).
+
+straightflushes(CARDS, R) :-
+    straights(CARDS, straight(A, B, C, D, E)),
+    ((flush(A, B, C, D, E), R = straightflush(A, B, C, D, E));
+    (select(E, CARDS, NCARDS), straightflushes(NCARDS, R))).
+
+royalflushes(CARDS, royalflush(card(ace, S), card(king, S), card(queen, S), card(jack, S), card(10, S))) :-
+    subset([card(ace, S), card(king, S), card(queen, S), card(jack, S), card(10, S)], CARDS).
 
 % generate all hands
-hands(CARDS, R) :- highs(CARDS, HIGHS), pairs(CARDS, PAIRS), twopairs(CARDS, TWOPAIRS), threes(CARDS, THREES), straights(CARDS, STRAIGHTS), flushes(CARDS, FLUSHES), fullhouses(CARDS, FULLHOUSES), fours(CARDS, FOURS), straightflushes(CARDS, STRAIGHTFLUSHES), royalflushes(CARDS, ROYALFLUSHES), append([HIGHS, PAIRS, TWOPAIRS, THREES, STRAIGHTS, FLUSHES, FULLHOUSES, FOURS, STRAIGHTFLUSHES, ROYALFLUSHES], R).
+hands(CARDS, R) :- hands(CARDS, royalflushes, R).
+hands(CARDS, royalflushes, R)    :- royalflushes(CARDS, R);    (\+ royalflushes(CARDS, _),    hands(CARDS, straightflushes, R)).
+hands(CARDS, straightflushes, R) :- straightflushes(CARDS, R); (\+ straightflushes(CARDS, _), hands(CARDS, fours, R)).
+hands(CARDS, fours, R)           :- fours(CARDS, R);           (\+ fours(CARDS, _),           hands(CARDS, fullhouses, R)).
+hands(CARDS, fullhouses, R)      :- fullhouses(CARDS, R);      (\+ fullhouses(CARDS, _),      hands(CARDS, flushes, R)).
+hands(CARDS, flushes, R)         :- flushes(CARDS, R);         (\+ flushes(CARDS, _),         hands(CARDS, straights, R)).
+hands(CARDS, straights, R)       :- straights(CARDS, R);       (\+ straights(CARDS, _),       hands(CARDS, threes, R)).
+hands(CARDS, threes, R)          :- threes(CARDS, R);          (\+ threes(CARDS, _),          hands(CARDS, twopairs, R)).
+hands(CARDS, twopairs, R)        :- twopairs(CARDS, R);        (\+ twopairs(CARDS, _),        hands(CARDS, pairs, R)).
+hands(CARDS, pairs, R)           :- pairs(CARDS, R);           (\+ pairs(CARDS, _),           hands(CARDS, highs, R)).
+hands(CARDS, highs, R)           :- highs(CARDS, R).
 
 % determine whether one ranking is better than another
 beats([A|_], [B|_]) :- A > B.
@@ -94,12 +138,8 @@ better(A, B, A) :- ranking(A, RA), ranking(B, RB), beats(RA, RB).
 better(A, B, B) :- ranking(A, RA), ranking(B, RB), beats(RB, RA).
 better(A, B, tie) :- ranking(A, RA), ranking(B, RB), \+ beats(RA, RB), \+ beats(RB, RA).
 
-% find best hand for individual player.
-bestof([], R, R).
-bestof([H|T], C, R)  :- better(H, C, N), ((N = H; N = C), bestof(T, N, R); (N = tie, bestof(T, C, R))).
-
 % get the best hand from a set of cards
-besthand(CARDS, B) :- length(CARDS, L), L > 0, hands(CARDS, [H|T]), bestof(T, H, B).
+besthand(CARDS, R) :- length(CARDS, L), L > 0, hands(CARDS, R).
 
 % check who has the highest kickers
 checkkickers(_, _, 0, tie).
