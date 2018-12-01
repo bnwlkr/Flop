@@ -13,15 +13,16 @@ nottaken(TAKEN, NOTTAKEN) :- allcards(ALL), subtract(ALL, TAKEN, NOTTAKEN).
 % get all possible untaken hands
 possiblehands(NOTTAKEN, R) :- findall([card(V1, S1), card(V2, S2)], (member(card(V1, S1), NOTTAKEN), member(card(V2, S2), NOTTAKEN), greater(card(V1, S1), card(V2, S2))), R).
 
-chancetowin(MYHAND, COMM) :-
-    percentyoubeat(MYHAND, COMM),
+chancetowin(MYHAND, COMM, NUMPLAYERS) :-
+    approxwinodds(MYHAND, COMM, NUMPLAYERS),
     bluffopp(MYHAND, COMM).
 
-percentyoubeat(MYHAND, COMM) :-
+approxwinodds(MYHAND, COMM, NUMPLAYERS) :-
     append(MYHAND, COMM, TAKEN), nottaken(TAKEN, NOTTAKEN),
     possiblehands(NOTTAKEN, HANDS), length(HANDS, T),
     whatbeatsme(MYHAND, COMM, HANDS, BEATSME), length(BEATSME, L),
-    P is round(100 * L / T), write(P), write("% of possible hands beat yours.\n").
+    write("You have approximately a "), P is round(100 * (1 - L / T)**NUMPLAYERS),
+    write(P), write("% of having the best cards for this hand.\n").
 
 bluffopp(MYHAND, COMM) :-
     append(MYHAND, COMM, MYCARDS), besthand(MYCARDS, BH), ranking(BH, [H1|_]),

@@ -1,6 +1,6 @@
 :- include('probability').
 
-starthand :-
+starthand(NUMPLAYERS) :-
     write("Hi! I can help you determine the best move given your hand.\n"),
     write("First, what cards were you dealt? (input like this: jack of diamonds and 7 of spades)\n"),
     readln(L1),
@@ -8,7 +8,7 @@ starthand :-
     write("Now, what cards are on the table?\n"),
     readln(L2),
     parseinput(L2, COMM),
-    chancetowin(HAND, COMM).
+    chancetowin(HAND, COMM, NUMPLAYERS).
 
 parseinput(WORDS, CARDS) :-
     subtract(WORDS, [of,and], CARDWORDS),
